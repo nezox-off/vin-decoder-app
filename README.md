@@ -1,87 +1,109 @@
-# Welcome to React Router!
+# VIN Decoder
 
-A modern, production-ready template for building full-stack React applications using React Router.
-
-[![Open in StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/remix-run/react-router-templates/tree/main/default)
-
-## Features
-
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
-
-## Getting Started
-
-### Installation
-
-Install the dependencies:
-
-```bash
-npm install
-```
-
-### Development
-
-Start the development server with HMR:
-
-```bash
-npm run dev
-```
-
-Your application will be available at `http://localhost:5173`.
-
-## Building for Production
-
-Create a production build:
-
-```bash
-npm run build
-```
-
-## Deployment
-
-### Docker Deployment
-
-To build and run using Docker:
-
-```bash
-docker build -t my-app .
-
-# Run the container
-docker run -p 3000:3000 my-app
-```
-
-The containerized application can be deployed to any platform that supports Docker, including:
-
-- AWS ECS
-- Google Cloud Run
-- Azure Container Apps
-- Digital Ocean App Platform
-- Fly.io
-- Railway
-
-### DIY Deployment
-
-If you're familiar with deploying Node applications, the built-in app server is production-ready.
-
-Make sure to deploy the output of `npm run build`
-
-```
-├── package.json
-├── package-lock.json (or pnpm-lock.yaml, or bun.lockb)
-├── build/
-│   ├── client/    # Static assets
-│   └── server/    # Server-side code
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
+Вебзастосунок для декодування ідентифікаційних номерів транспортних засобів (VIN) за допомогою безкоштовного [NHTSA vPIC API](https://vpic.nhtsa.dot.gov/api/). Побудований на React Router, Zustand та Tailwind CSS.
 
 ---
 
-Built with ❤️ using React Router.
+## Стек
+
+- **React Router v7** — маршрутизація та серверні лоадери
+- **Zustand** + `persist` middleware — глобальний стан із localStorage
+- **Tailwind CSS** — стилізація
+- **NHTSA vPIC API** — безкоштовний, API-ключ не потрібен
+
+---
+
+## Встановлення
+
+### Вимоги
+
+- Node.js 18+
+- npm або pnpm
+
+### Кроки
+
+```bash
+# 1. Клонуйте репозиторій
+git clone https://github.com/your-username/vin-decoder.git
+cd vin-decoder
+
+# 2. Встановіть залежності
+npm install
+
+# 3. Запустіть сервер розробки
+npm run dev
+```
+
+Застосунок буде доступний за адресою `http://localhost:5173`.
+
+---
+
+## Використання
+
+### Декодування VIN
+
+1. Відкрийте застосунок і перейдіть на сторінку **Головна**
+2. Введіть 17-символьний VIN у поле вводу
+3. Натисніть **DECODE →**
+4. Декодовані дані про автомобіль з'являться у вигляді карток, згрупованих за категоріями
+
+> VIN автоматично перетворюється у верхній регістр під час введення.
+> Лічильник символів показує прогрес до 17 знаків.
+
+### Перегляд змінних
+
+Перейдіть на сторінку **Усі змінні**, щоб переглянути всі 144 поля, які відстежує база NHTSA — характеристики двигуна, системи безпеки, розміри тощо.
+
+Натисніть на будь-яку картку змінної, щоб побачити всі допустимі значення для цього поля (лише для змінних типу `lookup`).
+
+### Історія
+
+Останні 3 декодованих VIN зберігаються автоматично та відображаються на панелі історії. Натисніть на будь-який запис, щоб декодувати його знову.
+
+---
+
+## Структура проєкту
+
+```
+app/
+├── components/
+│   ├── VariableCard.tsx     # Картка окремої змінної
+│   ├── Variables.tsx        # Список усіх змінних
+│   ├── VINForm.tsx          # Форма введення VIN
+│   └── VINHistory.tsx       # Панель історії VIN
+├── pages/
+│   ├── index.tsx            # Головна сторінка (декодер)
+│   └── variables.tsx        # Сторінка змінних
+├── routes/
+│   ├── home.tsx             # Маршрут головної сторінки
+│   ├── variable-details.tsx # Маршрут деталей змінної
+│   └── variables.tsx        # Маршрут списку змінних
+├── stores/
+│   └── variablesStore.ts    # Zustand store
+├── app.css                  # Глобальні стилі
+├── root.tsx                 # Кореневий компонент
+├── routes.ts                # Конфігурація маршрутів
+└── types.ts                 # Спільні TypeScript типи
+```
+
+---
+
+## API
+
+Усі дані надходять із NHTSA vPIC API.
+
+| Endpoint                                                      | Опис                                  |
+| ------------------------------------------------------------- | ------------------------------------- |
+| `GET /vehicles/DecodeVin/{vin}?format=json`                   | Декодувати VIN                        |
+| `GET /vehicles/GetVehicleVariableList?format=json`            | Усі 144 змінні                        |
+| `GET /vehicles/GetVehicleVariableValuesList/{id}?format=json` | Допустимі значення для lookup-змінної |
+
+### Коди помилок
+
+| Код  | Значення                             |
+| ---- | ------------------------------------ |
+| `0`  | VIN декодовано успішно               |
+| `1`  | Невірна контрольна цифра (позиція 9) |
+| `4`  | VIN не знайдено в базі NHTSA         |
+| `6`  | Неповний VIN (менше 17 символів)     |
+| `11` | Недопустимі символи у VIN            |
